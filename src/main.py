@@ -188,6 +188,7 @@ class Mouse(object):
         self.__coordinates = [(
             random.randrange(self.__w, area[0] - self.__w, self.__w),
             random.randrange(self.__h, area[1] - self.__h, self.__h))]
+        self.__x, self.__y = self.__coordinates[0]
 
 
 class SnakeGame(object):
@@ -202,7 +203,11 @@ class SnakeGame(object):
         pygame.font.SysFont('arial', 30, True, True)
         pygame.display.set_caption('Snake - Micrurus corallinus')
         pygame.mixer.music.load(
-            os.path.join(self.__game_path, 'resources', 'bg.mp3'))
+            os.path.join(
+                self.__game_path,
+                'resources',
+                # https://freemusicarchive.org/music/Peter_Gresser/
+                'Peter Gresser - Skipping in the No Standing Zone.mp3'))
         pygame.mixer.music.set_volume(0.2)
         pygame.mixer.music.play(-1)
 
@@ -210,7 +215,8 @@ class SnakeGame(object):
 
         self.__snake = Snake(x=self.__w // 2 - 20, y=20, w=20, h=20)
         self.__snake_eating_mouse_sound = pygame.mixer.Sound(
-            os.path.join(self.__game_path, 'resources', 'eating-mouse.wav'))
+            # https://themushroomkingdom.net/media/smw/wav
+            os.path.join(self.__game_path, 'resources', 'smw_kick.wav'))
 
         self.__mouse = Mouse(
             x=random.randrange(20, self.__w - 20, 20),
@@ -260,10 +266,41 @@ class SnakeGame(object):
         self.__snake_collides_itself()
         self.__snake_eat_the_mouse()
 
+    def __handle_keyboard_keys_event(self):
+        # ...
+        # pressed = pygame.key.get_pressed()
+        # if pressed[pygame.K_UP]:
+        #     if snake_y > 0:
+        #         snake_y -= 20
+        # if pressed[pygame.K_DOWN]:
+        #     if snake_y < height - 50:
+        #         snake_y += 20
+        # if pressed[pygame.K_LEFT]:
+        #     if snake_x > 0:
+        #         snake_x -= 20
+        # if pressed[pygame.K_RIGHT]:
+        #     if snake_x < width - 50:
+        #         snake_x += 20
+
+        keys = {K_LEFT: 'left', K_RIGHT: 'right', K_UP: 'up', K_DOWN: 'down'}
+        opposite_direction = {
+            'down': 'up', 'up': 'down', 'left': 'right', 'right': 'left'}
+
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                self.__running = False
+                break
+
+            if event.type == KEYDOWN:
+                if event.key in keys:
+                    if keys[event.key] == self.__direction:
+                        self.__speed_up_snake()
+
+                    if keys[event.key] != opposite_direction[self.__direction]:
+                        self.__direction = keys[event.key]
+
     def __snake_eat_the_mouse(self) -> None:
         # ...
-        # https://freemusicarchive.org/music/BoxCat_Games
-        # https://themushroomkingdom.net/media/smw/wav
         if self.__snake.head_coordinate == self.__mouse.coordinates[0]:
             self.__snake.grow(self.__mouse.coordinates[0])
             self.__mouse.raffle_new_coordinates((self.__w, self.__h))
@@ -300,35 +337,31 @@ class SnakeGame(object):
         if self.__snake.head_coordinate in self.__snake.coordinates[2:]:
             self.__running = False
 
-    def __handle_keyboard_keys_event(self):
+    def __speed_up_snake(self):
         # ...
-        # pressed = pygame.key.get_pressed()
-        # if pressed[pygame.K_UP]:
-        #     if snake_y > 0:
-        #         snake_y -= 20
-        # if pressed[pygame.K_DOWN]:
-        #     if snake_y < height - 50:
-        #         snake_y += 20
-        # if pressed[pygame.K_LEFT]:
-        #     if snake_x > 0:
-        #         snake_x -= 20
-        # if pressed[pygame.K_RIGHT]:
-        #     if snake_x < width - 50:
-        #         snake_x += 20
+        if self.__direction == 'right':
+            if (self.__snake.head_coordinate[0] <=
+                    self.__mouse.x - self.__mouse.w * 2 or
+                    self.__snake.head_coordinate[0] > self.__mouse.x):
+                self.__snake.walk_in_coordinate_direction(self.__direction)
 
-        keys = {K_LEFT: 'left', K_RIGHT: 'right', K_UP: 'up', K_DOWN: 'down'}
-        opposite_direction = {
-            'down': 'up', 'up': 'down', 'left': 'right', 'right': 'left'}
+        elif self.__direction == 'left':
+            if (self.__mouse.x <=
+                    self.__snake.head_coordinate[0] - self.__mouse.w * 2 or
+                    self.__mouse.x > self.__snake.head_coordinate[0]):
+                self.__snake.walk_in_coordinate_direction(self.__direction)
 
-        for event in pygame.event.get():
-            if event.type == QUIT:
-                self.__running = False
-                break
+        elif self.__direction == 'down':
+            if (self.__snake.head_coordinate[1] <=
+                    self.__mouse.y - self.__mouse.h * 2 or
+                    self.__snake.head_coordinate[1] > self.__mouse.y):
+                self.__snake.walk_in_coordinate_direction(self.__direction)
 
-            if event.type == KEYDOWN:
-                if event.key in keys:
-                    if keys[event.key] != opposite_direction[self.__direction]:
-                        self.__direction = keys[event.key]
+        elif self.__direction == 'up':
+            if (self.__mouse.y <=
+                    self.__snake.head_coordinate[1] - self.__mouse.h * 2 or
+                    self.__mouse.y > self.__snake.head_coordinate[1]):
+                self.__snake.walk_in_coordinate_direction(self.__direction)
 
 
 if __name__ == '__main__':
