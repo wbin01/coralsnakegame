@@ -409,7 +409,7 @@ class SnakeGame(object):
 
         if coordinate in self.__direction_bend_coordinates:
             direction = self.__direction_bend_coordinates[coordinate]
-            if 'tail' not in texture_name and 'head' not in texture_name:
+            if 'head' not in texture_name:  # 'tail' not in texture_name and
                 if direction not in texture_name:
                     for d in ['left', 'right', 'up', 'down']:
                         if d in texture_name:
