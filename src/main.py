@@ -98,6 +98,18 @@ class Snake(object):
         self.__coordinates.append((x, y))
         self.__texture_name_coordinates[(x, y)] = f'tail-{self.__direction}'
 
+    def reset(self) -> None:
+        """..."""
+        self.__direction = 'down'
+        self.__coordinates = [
+            (self.__x, self.__y + self.__h * 2),
+            (self.__x, self.__y + self.__h),
+            (self.__x, self.__y)]
+        self.__texture_name_coordinates = {
+            self.__coordinates[0]: 'head-down',
+            self.__coordinates[1]: 'red-3-down',
+            self.__coordinates[2]: 'tail-down'}
+
     def walk_in_coordinate_direction(self, direction: str) -> None:
         """..."""
         x, y = self.__coordinates[0]
@@ -279,6 +291,8 @@ class SnakeGame(object):
             os.path.join(self.__game_path, 'resources', 'snakegame-icon.png'))
         pygame.display.set_icon(self.__window_icon)
 
+        self.__score_font = pygame.font.SysFont('arial', 12, True, True)
+
         self.__screen = pygame.display.set_mode((self.__w, self.__h))
         self.__background = pygame.image.load(
             os.path.join(self.__game_path, 'resources', 'background.jpg'))
@@ -290,6 +304,7 @@ class SnakeGame(object):
             x=random.randrange(20, self.__w - 20, 20),
             y=random.randrange(20, self.__h - 20, 20),
             w=20, h=20)
+
         self.__mouse_sprites = MouseSprites(self.__game_path, 0)
         self.__sprite_group.add(self.__mouse_sprites)
 
@@ -300,13 +315,19 @@ class SnakeGame(object):
         self.__snake_sprites = SnakeSprites(self.__game_path, 1)
         self.__sprite_group.add(self.__snake_sprites)
 
+        self.__running = True
+        self.__end_game = False
+        self.__pause_game = False
+
         self.__clock = pygame.time.Clock()
         self.__clock_tick = 5
-        self.__running = True
+
         self.__direction = 'down'
         self.__direction_coordinates = {}
         self.__direction_bend_coordinates = {}
+
         self.__can_walk = False
+        self.__scores = 0
 
     def run(self) -> int:
         """..."""
@@ -315,9 +336,13 @@ class SnakeGame(object):
             # self.__screen.fill((110, 160, 120))
 
             self.__handle_keyboard_keys_event()
-            self.__handle_characters_state()
 
-            self.__draw()
+            if self.__end_game:
+                self.__draw_end_screen()
+
+            elif not self.__pause_game:
+                self.__handle_characters_state()
+                self.__draw()
             pygame.display.flip()
         return 0
 
@@ -340,21 +365,38 @@ class SnakeGame(object):
 
             self.__sprite_group.draw(self.__screen)
 
+        self.__screen.blit(
+            self.__score_font.render(
+                str(self.__scores), True, (255, 255, 255)),
+            (3, 3))
         self.__sprite_group.update()
         self.__can_walk = True
 
+    def __draw_end_screen(self) -> None:
+        # ...
+        self.__screen.fill((255, 255, 255))
+        font = pygame.font.SysFont('arial', 40, True, True)
+
+        self.__screen.blit(
+            font.render('End Game!', True, (0, 0, 0)), (50, 20))
+
+        txt = f'Scores: {self.__scores}'
+        self.__screen.blit(
+            font.render(txt, True, (0, 0, 0)), (50, 70))
+
+        txt = 'Press ENTER to continue'
+        self.__screen.blit(
+            font.render(txt, True, (0, 0, 0)), (50, 120))
+
     def __handle_characters_state(self) -> None:
         # ...
-        # message = f'Pontos: {points}'
-        # text = font.render(message, True, (0, 0, 0))
-        # screen.blit(text, (450, 40))
         self.__snake_eat_the_mouse()
         self.__snake_appears_on_inverse_screen_side()
         self.__snake_collides_itself()
         self.__snake.walk_in_coordinate_direction(self.__direction)
         self.__register_coordinate_direction()
 
-    def __handle_keyboard_keys_event(self):
+    def __handle_keyboard_keys_event(self) -> None:
         # ...
         # pressed = pygame.key.get_pressed()
         # if pressed[pygame.K_UP]:
@@ -380,6 +422,17 @@ class SnakeGame(object):
                 break
 
             if event.type == KEYDOWN:
+                if event.key == K_SPACE:
+                    if self.__running and not self.__end_game:
+                        self.__pause_game = False if self.__pause_game else True
+
+                elif event.key == K_ESCAPE:
+                    self.__running = False
+
+                elif event.key == K_RETURN:
+                    if self.__end_game:
+                        self.__restart_game()
+
                 if event.key in keys:
                     if keys[event.key] == self.__direction:
                         self.__speed_up_snake()
@@ -407,6 +460,13 @@ class SnakeGame(object):
         self.__direction_coordinates[self.__snake.coordinates[0]] = (
             self.__direction)
 
+    def __restart_game(self) -> None:
+        self.__screen.fill(pygame.Color('black'))
+        self.__snake.reset()
+        self.__scores = 0
+
+        self.__end_game = False
+
     def __snake_eat_the_mouse(self) -> None:
         # ...
         if self.__snake.coordinates[0] == self.__mouse.coordinates[0]:
@@ -415,6 +475,8 @@ class SnakeGame(object):
             self.__mouse_sprites.set_new_sprite()
             self.__snake.grow(self.__mouse.coordinates[0])
             self.__snake_eating_mouse_sound.play()
+            self.__scores += 1
+            self.__scores_info = f'Scores: {self.__scores}'
 
     def __snake_appears_on_inverse_screen_side(self) -> None:
         # ...
@@ -437,9 +499,10 @@ class SnakeGame(object):
     def __snake_collides_itself(self) -> None:
         # ...
         if self.__snake.coordinates[0] in self.__snake.coordinates[2:]:
-            self.__running = False
+            self.__end_game = True
+            # self.__running = False
 
-    def __speed_up_snake(self):
+    def __speed_up_snake(self) -> None:
         # ...
         can_walk = False
         if self.__direction == 'right':
