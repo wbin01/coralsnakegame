@@ -273,6 +273,10 @@ class SnakeGame(object):
         pygame.mixer.music.set_volume(0.2)
         pygame.mixer.music.play(-1)
 
+        self.__window_icon = pygame.image.load(
+            os.path.join(self.__game_path, 'resources', 'snakegame-icon.png'))
+        pygame.display.set_icon(self.__window_icon)
+
         self.__screen = pygame.display.set_mode((self.__w, self.__h))
         self.__background = pygame.image.load(
             os.path.join(self.__game_path, 'resources', 'background.jpg'))
