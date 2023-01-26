@@ -291,7 +291,10 @@ class SnakeGame(object):
             os.path.join(self.__game_path, 'resources', 'snakegame-icon.png'))
         pygame.display.set_icon(self.__window_icon)
 
-        self.__score_font = pygame.font.SysFont('arial', 12, True, True)
+        self.__font_url = os.path.join(
+            self.__game_path, 'resources', 'amaticsc-bold.ttf')
+        self.__score_font = pygame.font.Font(self.__font_url, 25)
+        # self.__score_font = pygame.font.SysFont('arial', 15, False, False)
 
         self.__screen = pygame.display.set_mode((self.__w, self.__h))
         self.__background = pygame.image.load(
@@ -368,25 +371,28 @@ class SnakeGame(object):
         self.__screen.blit(
             self.__score_font.render(
                 str(self.__scores), True, (255, 255, 255)),
-            (3, 3))
+            (5, -5))
         self.__sprite_group.update()
         self.__can_walk = True
 
     def __draw_end_screen(self) -> None:
         # ...
-        self.__screen.fill((255, 255, 255))
-        font = pygame.font.SysFont('arial', 40, True, True)
+        self.__screen.blit(self.__background, (0, 0))
 
+        font = pygame.font.Font(self.__font_url, 100)
         self.__screen.blit(
-            font.render('End Game!', True, (0, 0, 0)), (50, 20))
+            font.render('End Game!', True, (255, 255, 255)),
+            (self.__w // 2 - 130, 50))
 
         txt = f'Scores: {self.__scores}'
+        font = pygame.font.Font(self.__font_url, 40)
         self.__screen.blit(
-            font.render(txt, True, (0, 0, 0)), (50, 70))
+            font.render(txt, True, (255, 255, 255)), (50, 180))
 
-        txt = 'Press ENTER to continue'
+        txt = "Press key 'ENTER' to play again"
+        font = pygame.font.Font(self.__font_url, 50)
         self.__screen.blit(
-            font.render(txt, True, (0, 0, 0)), (50, 120))
+            font.render(txt, True, (255, 255, 255)), (50, 250))
 
     def __handle_characters_state(self) -> None:
         # ...
@@ -423,14 +429,18 @@ class SnakeGame(object):
 
             if event.type == KEYDOWN:
                 if event.key == K_SPACE:
-                    if self.__running and not self.__end_game:
-                        self.__pause_game = False if self.__pause_game else True
+                    if self.__running and self.__end_game:
+                        if self.__pause_game:
+                            self.__pause_game = False
+                        else:
+                            self.__pause_game = True
 
                 elif event.key == K_ESCAPE:
                     self.__running = False
 
                 elif event.key == K_RETURN:
                     if self.__end_game:
+                        self.__end_game = False
                         self.__restart_game()
 
                 if event.key in keys:
@@ -464,8 +474,6 @@ class SnakeGame(object):
         self.__screen.fill(pygame.Color('black'))
         self.__snake.reset()
         self.__scores = 0
-
-        self.__end_game = False
 
     def __snake_eat_the_mouse(self) -> None:
         # ...
