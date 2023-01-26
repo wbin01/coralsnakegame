@@ -287,8 +287,8 @@ class SnakeGame(object):
         pygame.mixer.music.set_volume(0.2)
         pygame.mixer.music.play(-1)
 
-        self.__window_icon = pygame.image.load(
-            os.path.join(self.__game_path, 'resources', 'snakegame-icon.png'))
+        self.__window_icon = pygame.image.load(os.path.join(
+            self.__game_path, 'resources', 'coral-snake-game.png'))
         pygame.display.set_icon(self.__window_icon)
 
         self.__font_url = os.path.join(
