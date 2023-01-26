@@ -1,10 +1,83 @@
 #!/usr/bin/env python3
+import logging
 import os
 import random
 import sys
 
 import pygame
 from pygame.locals import *
+
+
+class Mouse(object):
+    """..."""
+    def __init__(
+            self, x: int = 0, y: int = 0, w: int = 20, h: int = 20) -> None:
+        """..."""
+        self.__x, self.__y, self.__w, self.__h = x, y, w, h
+        self.__coordinates = [(self.__x, self.__y)]
+
+    @property
+    def coordinates(self) -> list:
+        """X and Y coordinates
+
+        Coordinates that define where the character will be drawn on
+        the screen
+        """
+        return self.__coordinates
+
+    @property
+    def h(self) -> int:
+        """..."""
+        return self.__h
+
+    @property
+    def w(self) -> int:
+        """..."""
+        return self.__w
+
+    @property
+    def x(self) -> int:
+        """..."""
+        return self.__x
+
+    @property
+    def y(self) -> int:
+        """..."""
+        return self.__y
+
+    def raffle_new_coordinates(self, area: tuple) -> None:
+        """Updates the x and y coordinates
+
+        Coordinates where the mouse will be drawn
+        """
+        self.__coordinates = [(
+            random.randrange(self.__w, area[0] - self.__w, self.__w),
+            random.randrange(self.__h, area[1] - self.__h, self.__h))]
+        self.__x, self.__y = self.__coordinates[0]
+
+
+class MouseSprites(pygame.sprite.Sprite):
+    def __init__(self, game_path, layer):
+        super().__init__()
+        self.__sprites_path = os.path.join(game_path, 'resources', 'sprites')
+        self.__sprites = {}
+
+        for filename in os.listdir(self.__sprites_path):
+            sprite = pygame.image.load(
+                os.path.join(self.__sprites_path, filename))
+            self.__sprites[filename[:-4]] = sprite
+
+        self.image = self.__sprites['mouse-1']
+        self.rect = self.image.get_rect()
+        self._layer = layer
+
+    def set_new_sprite(self) -> None:
+        """..."""
+        self.image = self.__sprites[f'mouse-{random.randint(1, 4)}']
+
+    def set_coordinate(self, coordinate: tuple):
+        """..."""
+        self.rect.topleft = coordinate
 
 
 class Snake(object):
@@ -69,7 +142,7 @@ class Snake(object):
 
         :param coordinate: x and y mouse coordinate tuple
         """
-        tail_name = self.__texture_name_coordinates[self.__coordinates[-2]]
+        pre_tail_name = self.__texture_name_coordinates[self.__coordinates[-2]]
 
         x, y = coordinate
         if self.__direction == 'up':
@@ -81,18 +154,25 @@ class Snake(object):
         elif self.__direction == 'right':
             x += self.__w
 
-        if 'red-1' in tail_name:
-            tail_name = f'black-1-{self.__direction}'
-        elif 'red-2' in tail_name:
-            tail_name = f'red-1-{self.__direction}'
-        elif 'red-3' in tail_name:
-            tail_name = f'red-2-{self.__direction}'
-        elif 'black-1' in tail_name:
-            tail_name = f'black-2-{self.__direction}'
-        elif 'black-2' in tail_name:
-            tail_name = f'red-3-{self.__direction}'
+        if 'red-1' in pre_tail_name:
+            pre_tail_name = f'black-1-{self.__direction}'
+        elif 'red-2' in pre_tail_name:
+            pre_tail_name = f'red-1-{self.__direction}'
+        elif 'red-3' in pre_tail_name:
+            pre_tail_name = f'red-2-{self.__direction}'
+        elif 'black-1' in pre_tail_name:
+            pre_tail_name = f'black-2-{self.__direction}'
+        elif 'black-2' in pre_tail_name:
+            pre_tail_name = f'red-3-{self.__direction}'
 
-        self.__texture_name_coordinates[self.__coordinates[-1]] = tail_name
+        self.__texture_name_coordinates[self.__coordinates[-1]] = pre_tail_name
+
+        coo = self.__coordinates
+        for i in coo:
+            if i not in self.__texture_name_coordinates:
+                # self.__coordinates.remove(i)
+                print('XXXXXXXXXXXXXXXXXXXX')
+
         self.__coordinates.append((x, y))
         self.__texture_name_coordinates[(x, y)] = f'tail-{self.__direction}'
 
@@ -117,17 +197,38 @@ class Snake(object):
                 self.__direction = 'right'
 
         self.__coordinates.insert(0, (x, y))
-        self.__coordinates = self.__coordinates[:-1]
+        self.__coordinates.pop()
+        # self.__coordinates = self.__coordinates[:-1]
 
         textures = [tex for tex in self.__texture_name_coordinates.values()]
         texture_name_coordinates = {}
         for coordinate, texture in zip(self.__coordinates, textures):
             texture_name_coordinates[coordinate] = texture
+
+        there_was_a_thread_cut = False
+        for xy in self.__coordinates:
+            if xy not in texture_name_coordinates:
+                texture_name_coordinates[xy] = f'red-1-{self.__direction}'
+                logging.warning('Thread cut')
+                there_was_a_thread_cut = True
+
+        if there_was_a_thread_cut:
+            for xy in self.__coordinates:
+                if 'tail' in texture_name_coordinates[xy]:
+                    texture_name_coordinates[xy] = f'red-1-{self.__direction}'
+
+                texture_name_coordinates[self.__coordinates[-1]] = (
+                    f'tail-{self.__direction}')
+
         self.__texture_name_coordinates = texture_name_coordinates
+
+    def texture_name_coordinates_thread_cut(
+            self, texture_name_coordinates: dict) -> dict:
+        pass
 
 
 class SnakeSprites(pygame.sprite.Sprite):
-    def __init__(self, game_path):
+    def __init__(self, game_path, layer):
         super().__init__()
         self.__sprites_path = os.path.join(game_path, 'resources', 'sprites')
         self.__sprites = {}
@@ -139,6 +240,7 @@ class SnakeSprites(pygame.sprite.Sprite):
 
         self.image = self.__sprites['head-down']
         self.rect = self.image.get_rect()
+        self._layer = layer
 
     def set_texture(self, texture_name: str) -> None:
         """..."""
@@ -149,54 +251,6 @@ class SnakeSprites(pygame.sprite.Sprite):
     def set_coordinate(self, coordinate: tuple):
         """..."""
         self.rect.topleft = coordinate
-
-
-class Mouse(object):
-    """..."""
-    def __init__(
-            self, x: int = 0, y: int = 0, w: int = 20, h: int = 20) -> None:
-        """..."""
-        self.__x, self.__y, self.__w, self.__h = x, y, w, h
-        self.__coordinates = [(self.__x, self.__y)]
-
-    @property
-    def coordinates(self) -> list:
-        """X and Y coordinates
-
-        Coordinates that define where the character will be drawn on
-        the screen
-        """
-        return self.__coordinates
-
-    @property
-    def h(self) -> int:
-        """..."""
-        return self.__h
-
-    @property
-    def w(self) -> int:
-        """..."""
-        return self.__w
-
-    @property
-    def x(self) -> int:
-        """..."""
-        return self.__x
-
-    @property
-    def y(self) -> int:
-        """..."""
-        return self.__y
-
-    def raffle_new_coordinates(self, area: tuple) -> None:
-        """Updates the x and y coordinates
-
-        Coordinates where the mouse will be drawn
-        """
-        self.__coordinates = [(
-            random.randrange(self.__w, area[0] - self.__w, self.__w),
-            random.randrange(self.__h, area[1] - self.__h, self.__h))]
-        self.__x, self.__y = self.__coordinates[0]
 
 
 class SnakeGame(object):
@@ -219,20 +273,26 @@ class SnakeGame(object):
         pygame.mixer.music.set_volume(0.2)
         pygame.mixer.music.play(-1)
 
-        self.__sprite_group = pygame.sprite.Group()
         self.__screen = pygame.display.set_mode((self.__w, self.__h))
+        self.__background = pygame.image.load(
+            os.path.join(self.__game_path, 'resources', 'background.jpg'))
 
-        self.__snake = Snake(x=self.__w // 2 - 20, y=20, w=20, h=20)
-        self.__snake_eating_mouse_sound = pygame.mixer.Sound(
-            # https://themushroomkingdom.net/media/smw/wav
-            os.path.join(self.__game_path, 'resources', 'smw_kick.wav'))
-        self.__snake_sprites = SnakeSprites(self.__game_path)
-        self.__sprite_group.add(self.__snake_sprites)
+        # self.__sprite_group = pygame.sprite.Group()
+        self.__sprite_group = pygame.sprite.LayeredUpdates()
 
         self.__mouse = Mouse(
             x=random.randrange(20, self.__w - 20, 20),
             y=random.randrange(20, self.__h - 20, 20),
             w=20, h=20)
+        self.__mouse_sprites = MouseSprites(self.__game_path, 0)
+        self.__sprite_group.add(self.__mouse_sprites)
+
+        self.__snake = Snake(x=self.__w // 2 - 20, y=20, w=20, h=20)
+        self.__snake_eating_mouse_sound = pygame.mixer.Sound(
+            # https://themushroomkingdom.net/media/smw/wav
+            os.path.join(self.__game_path, 'resources', 'smw_kick.wav'))
+        self.__snake_sprites = SnakeSprites(self.__game_path, 1)
+        self.__sprite_group.add(self.__snake_sprites)
 
         self.__clock = pygame.time.Clock()
         self.__clock_tick = 5
@@ -259,20 +319,22 @@ class SnakeGame(object):
         # ...
         # pygame.draw.circle(screen, (0, 0, 100), (300, 260), 40)
         # pygame.draw.line(screen, (0, 0, 100), (390, 0), (390, 600), 5)
+        self.__screen.blit(self.__background, (0, 0))
 
-        for coordinate in self.__mouse.coordinates:
-            pygame.draw.rect(
-                self.__screen, (100, 100, 110),
-                (coordinate[0], coordinate[1], self.__mouse.w, self.__mouse.h))
+        if self.__mouse.coordinates[0] == self.__snake.coordinates[0]:
+            self.__mouse_sprites.set_coordinate((1000, 1000))
+        else:
+            self.__mouse_sprites.set_coordinate(self.__mouse.coordinates[0])
 
         for coordinate in self.__snake.coordinates:
             self.__snake_sprites.set_coordinate(coordinate)
-            self.__snake_sprites.set_texture(
-                self.__texture_name_by_coordinate(coordinate))
+            texture_name = self.__texture_name_by_coordinate(coordinate)
+            if texture_name:
+                self.__snake_sprites.set_texture(texture_name)
 
             self.__sprite_group.draw(self.__screen)
-        self.__sprite_group.update()
 
+        self.__sprite_group.update()
         self.__can_walk = True
 
     def __handle_characters_state(self) -> None:
@@ -280,11 +342,9 @@ class SnakeGame(object):
         # message = f'Pontos: {points}'
         # text = font.render(message, True, (0, 0, 0))
         # screen.blit(text, (450, 40))
-
+        self.__snake_eat_the_mouse()
         self.__snake_appears_on_inverse_screen_side()
         self.__snake_collides_itself()
-        self.__snake_eat_the_mouse()
-
         self.__snake.walk_in_coordinate_direction(self.__direction)
         self.__register_coordinate_direction()
 
@@ -344,8 +404,9 @@ class SnakeGame(object):
     def __snake_eat_the_mouse(self) -> None:
         # ...
         if self.__snake.coordinates[0] == self.__mouse.coordinates[0]:
-            self.__snake.grow(self.__mouse.coordinates[0])
             self.__mouse.raffle_new_coordinates((self.__w, self.__h))
+            self.__mouse_sprites.set_new_sprite()
+            self.__snake.grow(self.__mouse.coordinates[0])
             self.__snake_eating_mouse_sound.play()
 
     def __snake_appears_on_inverse_screen_side(self) -> None:
@@ -405,7 +466,6 @@ class SnakeGame(object):
     def __texture_name_by_coordinate(self, coordinate: tuple) -> str:
         # ...
         texture_name = self.__snake.texture_name_coordinates[coordinate]
-        # 'tail-bend-down-to-right'
 
         if coordinate in self.__direction_bend_coordinates:
             direction = self.__direction_bend_coordinates[coordinate]
