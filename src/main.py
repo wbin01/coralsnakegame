@@ -344,7 +344,7 @@ class SnakeGame(object):
             if self.__end_game:
                 self.__draw_end_screen()
 
-            elif self.__scores == 2:
+            elif self.__scores == 200:
                 self.__win_game = True
                 self.__draw_game_win_screen()
 
