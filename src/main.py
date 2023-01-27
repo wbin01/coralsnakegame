@@ -321,6 +321,7 @@ class SnakeGame(object):
         self.__running = True
         self.__end_game = False
         self.__pause_game = False
+        self.__win_game = False
 
         self.__clock = pygame.time.Clock()
         self.__clock_tick = 5
@@ -342,6 +343,10 @@ class SnakeGame(object):
 
             if self.__end_game:
                 self.__draw_end_screen()
+
+            elif self.__scores == 2:
+                self.__win_game = True
+                self.__draw_game_win_screen()
 
             elif not self.__pause_game:
                 self.__handle_characters_state()
@@ -394,6 +399,25 @@ class SnakeGame(object):
         self.__screen.blit(
             font.render(txt, True, (255, 255, 255)), (50, 250))
 
+    def __draw_game_win_screen(self) -> None:
+        # ...
+        self.__screen.blit(self.__background, (0, 0))
+
+        font = pygame.font.Font(self.__font_url, 70)
+        self.__screen.blit(
+            font.render('Congratulations, you win!', True, (255, 255, 255)),
+            (50, 50))
+
+        font = pygame.font.Font(self.__font_url, 40)
+        self.__screen.blit(
+            font.render('Saved the forest from rodents',
+                        True, (255, 255, 255)), (50, 180))
+
+        txt = "Press key 'ENTER' to play again"
+        font = pygame.font.Font(self.__font_url, 50)
+        self.__screen.blit(
+            font.render(txt, True, (255, 255, 255)), (50, 250))
+
     def __handle_characters_state(self) -> None:
         # ...
         self.__snake_eat_the_mouse()
@@ -439,8 +463,9 @@ class SnakeGame(object):
                     self.__running = False
 
                 elif event.key == K_RETURN:
-                    if self.__end_game:
+                    if self.__end_game or self.__win_game:
                         self.__end_game = False
+                        self.__win_game = False
                         self.__restart_game()
 
                 if event.key in keys:
