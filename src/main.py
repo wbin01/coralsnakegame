@@ -473,6 +473,10 @@ class SnakeGame(object):
     def __restart_game(self) -> None:
         self.__screen.fill(pygame.Color('black'))
         self.__snake.reset()
+
+        self.__direction_coordinates = {}
+        self.__direction_bend_coordinates = {}
+        self.__direction = 'down'
         self.__scores = 0
 
     def __snake_eat_the_mouse(self) -> None:
