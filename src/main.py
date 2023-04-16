@@ -428,19 +428,6 @@ class SnakeGame(object):
 
     def __handle_keyboard_keys_event(self) -> None:
         # ...
-        # pressed = pygame.key.get_pressed()
-        # if pressed[pygame.K_UP]:
-        #     if snake_y > 0:
-        #         snake_y -= 20
-        # if pressed[pygame.K_DOWN]:
-        #     if snake_y < height - 50:
-        #         snake_y += 20
-        # if pressed[pygame.K_LEFT]:
-        #     if snake_x > 0:
-        #         snake_x -= 20
-        # if pressed[pygame.K_RIGHT]:
-        #     if snake_x < width - 50:
-        #         snake_x += 20
 
         keys = {K_LEFT: 'left', K_RIGHT: 'right', K_UP: 'up', K_DOWN: 'down'}
         opposite_direction = {
@@ -518,20 +505,20 @@ class SnakeGame(object):
     def __snake_appears_on_inverse_screen_side(self) -> None:
         # ...
         if self.__snake.coordinates[0][0] > self.__w:
-            new_head_coordinate = (0, self.__snake.coordinates[0][1])
-            self.__snake.coordinates[0] = new_head_coordinate
+            self.__snake.coordinates[0] = (
+                -self.__snake.w, self.__snake.coordinates[0][1])
 
         elif self.__snake.coordinates[0][0] < 0:
-            new_head_coordinate = (self.__w, self.__snake.coordinates[0][1])
-            self.__snake.coordinates[0] = new_head_coordinate
+            self.__snake.coordinates[0] = (
+                self.__w, self.__snake.coordinates[0][1])
 
         elif self.__snake.coordinates[0][1] > self.__h:
-            new_head_coordinate = (self.__snake.coordinates[0][0], 0)
-            self.__snake.coordinates[0] = new_head_coordinate
+            self.__snake.coordinates[0] = (
+                self.__snake.coordinates[0][0], -self.__snake.h)
 
         elif self.__snake.coordinates[0][1] < 0:
-            new_head_coordinate = (self.__snake.coordinates[0][0], self.__h)
-            self.__snake.coordinates[0] = new_head_coordinate
+            self.__snake.coordinates[0] = (
+                self.__snake.coordinates[0][0], self.__h)
 
     def __snake_collides_itself(self) -> None:
         # ...
